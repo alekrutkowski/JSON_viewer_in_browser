@@ -1,0 +1,175 @@
+<!-- Created with 'ChatGPT 4o' -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Tree Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f9f9f9;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+
+    .tree-view {
+      text-align: left;
+      background: white;
+      border: 1px solid #ddd;
+      padding: 10px;
+      max-height: 800px; /* Increased vertical size */
+      overflow-y: auto;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+
+    .tree-item {
+      margin-left: 20px;
+      cursor: pointer;
+    }
+
+    .tree-item span {
+      color: #555;
+    }
+
+    .collapsed > ul {
+      display: none;
+    }
+
+    ul {
+      list-style-type: none;
+      padding-left: 20px;
+    }
+
+    /* Spinner styles */
+    .spinner {
+      display: none;
+      margin: 20px auto;
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #333;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>JSON Tree Viewer</h1>
+    <input type="file" id="fileInput" accept=".json" />
+    <div class="spinner" id="spinner"></div>
+    <div id="treeView" class="tree-view"></div>
+  </div>
+  <script>
+    document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const spinner = document.getElementById('spinner');
+      const treeContainer = document.getElementById('treeView');
+
+      // Show the spinner and clear the previous tree view
+      spinner.style.display = 'block';
+      treeContainer.innerHTML = '';
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const jsonData = JSON.parse(e.target.result);
+          const tree = createTree(jsonData);
+          treeContainer.appendChild(tree);
+        } catch (error) {
+          alert('Invalid JSON file!');
+        } finally {
+          // Hide the spinner once processing is complete
+          spinner.style.display = 'none';
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function createTree(data) {
+      const root = document.createElement('ul');
+
+      function buildTree(obj, parent) {
+        if (Array.isArray(obj)) {
+          obj.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.classList.add('tree-item');
+            if (typeof item === 'object' && item !== null) {
+              li.textContent = `[${index}]`;
+              li.classList.add('collapsed');
+
+              const subTree = document.createElement('ul');
+              buildTree(item, subTree);
+              li.appendChild(subTree);
+
+              li.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('collapsed');
+              });
+            } else {
+              li.innerHTML = `<span>[${index}]:</span> ${item}`;
+            }
+            parent.appendChild(li);
+          });
+        } else {
+          for (const key in obj) {
+            const li = document.createElement('li');
+            li.classList.add('tree-item');
+
+            if (typeof obj[key] === 'object' && obj[key] !== null) {
+              li.textContent = key;
+              li.classList.add('collapsed');
+
+              const subTree = document.createElement('ul');
+              buildTree(obj[key], subTree);
+              li.appendChild(subTree);
+
+              li.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('collapsed');
+              });
+            } else {
+              li.innerHTML = `<span>${key}:</span> ${obj[key]}`;
+            }
+            parent.appendChild(li);
+          }
+        }
+      }
+
+      buildTree(data, root);
+      return root;
+    }
+  </script>
+</body>
+</html>
